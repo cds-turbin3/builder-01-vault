@@ -17,8 +17,10 @@ pub struct Close<'info> {
     pub vault: SystemAccount<'info>,
 
     #[account(
+        mut,
         seeds = [b"state", user.key().as_ref()],
         bump = vault_state.state_bump,
+        close = user,
     )]
     pub vault_state: Account<'info, VaultState>,
 
