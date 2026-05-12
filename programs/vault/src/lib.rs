@@ -26,6 +26,9 @@ pub mod vault {
     }
 
     // withdraw funds
+    pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
+        ctx.accounts.withdraw(amount)
+    }
 
     // close vault
 }
