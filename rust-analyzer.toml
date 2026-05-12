@@ -1,0 +1,2 @@
+[diagnostics]
+disabled = ["type-mismatch", "unresolved-proc-macro", "macro-error"]
