@@ -2,17 +2,20 @@
 //!
 //! Every vault instruction's Accounts struct shares the same four-field shape:
 //! `user`, `vault_state`, `vault`, `system_program`. This module bundles the
-//! three pubkeys that actually vary into [`VaultAccs`] and provides
-//! `From<VaultAccs>` for each of the four `accounts::*` client mirrors, so
-//! callers can build any of them from one bundle.
+//! three pubkeys that actually vary into [`VaultAccs`] and provides:
 //!
-//! The [`vault_ix!`] macro folds the bundle + variant + args into a single
-//! call.
+//! 1. `From<VaultAccs>` for each of the four `accounts::*` client mirrors, so
+//!    callers can build any of them from one bundle.
+//! 2. The [`VaultIx`] trait, which associates each `instruction::Variant`
+//!    args struct with its companion `accounts::Variant` struct. A generic
+//!    helper bounded on `VaultIx` can then build any vault instruction
+//!    without macro dispatch, keeping the call site fully analyzable by
+//!    rust-analyzer (hover, goto, autocomplete all work on the args struct).
 //!
 //! Gated `#[cfg(not(target_os = "solana"))]` so none of this lands in the
 //! on-chain binary.
 
-use crate::accounts;
+use crate::{accounts, instruction};
 use anchor_lang::{prelude::Pubkey, solana_program::system_program};
 
 #[derive(Copy, Clone, Debug)]
@@ -41,20 +44,23 @@ macro_rules! impl_from_vault_accs {
 
 impl_from_vault_accs!(Initialize, Deposit, Withdraw, Close);
 
-/// Build an instruction for one of the vault's four entry points.
+/// Associates a vault instruction's args struct with its accounts struct.
 ///
-/// ```ignore
-/// let accs = VaultAccs { user, state: vault_state_pda, vault: vault_pda };
-/// let ix = vault_ix!(ctx, accs, Initialize);
-/// let ix = vault_ix!(ctx, accs, Deposit, amount: 1_000_000_000);
-/// ```
-#[macro_export]
-macro_rules! vault_ix {
-    ($ctx:expr, $accs:expr, $variant:ident $(, $arg:ident : $val:expr)* $(,)?) => {
-        $ctx.program()
-            .accounts(<$crate::accounts::$variant>::from($accs))
-            .args($crate::instruction::$variant { $($arg: $val),* })
-            .instruction()
-            .unwrap()
+/// Implemented for each `instruction::Variant`, with `Accounts = accounts::Variant`.
+/// Generic helpers (see `tests/test_initialize.rs::build_ix`) use this to
+/// build any vault ix from `(VaultAccs, args)` without macro-based dispatch.
+pub trait VaultIx: anchor_lang::InstructionData {
+    type Accounts: From<VaultAccs> + anchor_lang::ToAccountMetas;
+}
+
+macro_rules! impl_vault_ix {
+    ($($variant:ident),* $(,)?) => {
+        $(
+            impl VaultIx for instruction::$variant {
+                type Accounts = accounts::$variant;
+            }
+        )*
     };
 }
+
+impl_vault_ix!(Initialize, Deposit, Withdraw, Close);
