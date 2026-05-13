@@ -1,15 +1,15 @@
 use {
     anchor_lang::{
-        prelude::{msg, Pubkey},
+        prelude::msg,
         solana_program::{instruction::Instruction, system_program},
-        AccountDeserialize, InstructionData, Space, ToAccountMetas,
+        AccountDeserialize, InstructionData, ToAccountMetas,
     },
     litesvm::LiteSVM,
     solana_keypair::Keypair,
-    solana_message::{Message, VersionedMessage},
+    solana_message::Message,
+    solana_pubkey::Pubkey,
     solana_signer::Signer,
-    solana_transaction::{versioned::VersionedTransaction, Transaction},
-    vault::program,
+    solana_transaction::Transaction,
 };
 
 fn setup() -> (LiteSVM, Keypair) {
@@ -17,7 +17,7 @@ fn setup() -> (LiteSVM, Keypair) {
     let payer = Keypair::new();
     let mut svm = LiteSVM::new();
     let bytes = include_bytes!("../../../target/deploy/vault.so");
-    svm.add_program(program_id, bytes);
+    let _ = svm.add_program(program_id, bytes);
     svm.airdrop(&payer.pubkey(), 10_000_000_000)
         .expect("Airdrop failed");
     (svm, payer)
