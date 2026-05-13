@@ -1,10 +1,9 @@
 use {
-    anchor_lang::solana_program::system_program,
     anchor_litesvm::{AnchorContext, AnchorLiteSVM, AssertionHelpers},
     solana_keypair::Keypair,
     solana_pubkey::Pubkey,
     solana_signer::Signer,
-    vault::state::VaultState,
+    vault::{state::VaultState, test_helpers::VaultAccs, vault_ix},
 };
 
 fn setup() -> (AnchorContext, Keypair) {
@@ -27,18 +26,14 @@ fn test_initialize_deposit_withdraw_close() {
     let (vault_pda, vault_bump) =
         Pubkey::find_program_address(&[b"vault", vault_state_pda.as_ref()], &program_id);
 
+    let accs = VaultAccs {
+        user,
+        state: vault_state_pda,
+        vault: vault_pda,
+    };
+
     // Initialize
-    let ix = ctx
-        .program()
-        .accounts(vault::accounts::Initialize {
-            user,
-            vault_state: vault_state_pda,
-            vault: vault_pda,
-            system_program: system_program::ID,
-        })
-        .args(vault::instruction::Initialize {})
-        .instruction()
-        .unwrap();
+    let ix = vault_ix!(ctx, accs, Initialize);
     ctx.execute_instruction(ix, &[&payer])
         .unwrap()
         .assert_success();
@@ -49,19 +44,7 @@ fn test_initialize_deposit_withdraw_close() {
 
     // Deposit 1 SOL
     let deposit_amount: u64 = 1_000_000_000;
-    let ix = ctx
-        .program()
-        .accounts(vault::accounts::Deposit {
-            user,
-            vault_state: vault_state_pda,
-            vault: vault_pda,
-            system_program: system_program::ID,
-        })
-        .args(vault::instruction::Deposit {
-            amount: deposit_amount,
-        })
-        .instruction()
-        .unwrap();
+    let ix = vault_ix!(ctx, accs, Deposit, amount: deposit_amount);
     ctx.execute_instruction(ix, &[&payer])
         .unwrap()
         .assert_success();
@@ -69,19 +52,7 @@ fn test_initialize_deposit_withdraw_close() {
 
     // Withdraw half
     let withdraw_amount: u64 = 500_000_000;
-    let ix = ctx
-        .program()
-        .accounts(vault::accounts::Withdraw {
-            user,
-            vault_state: vault_state_pda,
-            vault: vault_pda,
-            system_program: system_program::ID,
-        })
-        .args(vault::instruction::Withdraw {
-            amount: withdraw_amount,
-        })
-        .instruction()
-        .unwrap();
+    let ix = vault_ix!(ctx, accs, Withdraw, amount: withdraw_amount);
     ctx.execute_instruction(ix, &[&payer])
         .unwrap()
         .assert_success();
@@ -90,17 +61,7 @@ fn test_initialize_deposit_withdraw_close() {
 
     // Close
     let user_balance_before_close = ctx.svm.get_balance(&user).unwrap();
-    let ix = ctx
-        .program()
-        .accounts(vault::accounts::Close {
-            user,
-            vault_state: vault_state_pda,
-            vault: vault_pda,
-            system_program: system_program::ID,
-        })
-        .args(vault::instruction::Close {})
-        .instruction()
-        .unwrap();
+    let ix = vault_ix!(ctx, accs, Close);
     ctx.execute_instruction(ix, &[&payer])
         .unwrap()
         .assert_success();
