@@ -1,14 +1,9 @@
 use {
-    anchor_lang::solana_program::instruction::Instruction,
     anchor_litesvm::{AnchorContext, AnchorLiteSVM, AssertionHelpers},
     solana_keypair::Keypair,
     solana_pubkey::Pubkey,
     solana_signer::Signer,
-    vault::{
-        instruction as vix,
-        state::VaultState,
-        test_helpers::{VaultAccs, VaultIx},
-    },
+    vault::{instruction as vix, state::VaultState, test_helpers::VaultAccs},
 };
 
 fn setup() -> (AnchorContext, Keypair) {
@@ -18,18 +13,6 @@ fn setup() -> (AnchorContext, Keypair) {
     );
     let payer = ctx.payer().insecure_clone();
     (ctx, payer)
-}
-
-/// Build a vault instruction from its args. `A::Accounts` is resolved through
-/// the `VaultIx` trait, so `args` alone determines which accounts struct gets
-/// constructed. Candidate for upstream anchor-litesvm: a generic
-/// `ctx.build_ix(accs, args)` keyed on a trait the program crate provides.
-fn build_ix<A: VaultIx>(ctx: &AnchorContext, accs: VaultAccs, args: A) -> Instruction {
-    ctx.program()
-        .accounts(A::Accounts::from(accs))
-        .args(args)
-        .instruction()
-        .unwrap()
 }
 
 #[test]
@@ -50,7 +33,7 @@ fn test_initialize_deposit_withdraw_close() {
     };
 
     // Initialize
-    let ix = build_ix(&ctx, accs, vix::Initialize {});
+    let ix = ctx.program().build_ix(accs, vix::Initialize {});
     ctx.execute_instruction(ix, &[&payer])
         .unwrap()
         .assert_success();
@@ -61,7 +44,9 @@ fn test_initialize_deposit_withdraw_close() {
 
     // Deposit 1 SOL
     let deposit_amount: u64 = 1_000_000_000;
-    let ix = build_ix(&ctx, accs, vix::Deposit { amount: deposit_amount });
+    let ix = ctx
+        .program()
+        .build_ix(accs, vix::Deposit { amount: deposit_amount });
     ctx.execute_instruction(ix, &[&payer])
         .unwrap()
         .assert_success();
@@ -69,7 +54,9 @@ fn test_initialize_deposit_withdraw_close() {
 
     // Withdraw half
     let withdraw_amount: u64 = 500_000_000;
-    let ix = build_ix(&ctx, accs, vix::Withdraw { amount: withdraw_amount });
+    let ix = ctx
+        .program()
+        .build_ix(accs, vix::Withdraw { amount: withdraw_amount });
     ctx.execute_instruction(ix, &[&payer])
         .unwrap()
         .assert_success();
@@ -78,7 +65,7 @@ fn test_initialize_deposit_withdraw_close() {
 
     // Close
     let user_balance_before_close = ctx.svm.get_balance(&user).unwrap();
-    let ix = build_ix(&ctx, accs, vix::Close {});
+    let ix = ctx.program().build_ix(accs, vix::Close {});
     ctx.execute_instruction(ix, &[&payer])
         .unwrap()
         .assert_success();

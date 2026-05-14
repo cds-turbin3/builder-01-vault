@@ -314,8 +314,6 @@ dependencies = [
 [[package]]
 name = "anchor-litesvm"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d3581416625363b782a199bf2086da43a83a9b2b42bc2ae76e54ccc4ae01d83"
 dependencies = [
  "anchor-lang",
  "base64 0.22.1",
@@ -1733,8 +1731,6 @@ dependencies = [
 [[package]]
 name = "litesvm-utils"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1382a16f4a01ea92afbc40a8151fb92f6a57a265042f0bef168c159c5f60d524"
 dependencies = [
  "litesvm",
  "litesvm-token",

@@ -23,8 +23,17 @@ custom-panic = []
 [dependencies]
 anchor-lang = "1.0.2"
 
+# `test_helpers` lives in src/ (so the `BuildableIx` impls land in the vault
+# crate, satisfying the orphan rule), but it must not be compiled into the
+# BPF binary. A target-cfg'd normal dep pulls anchor-litesvm in only for
+# host builds; the module itself is `#[cfg(not(target_os = "solana"))]`.
+#
+# Path dep on the feat/buildable-ix branch. Switch to a published version
+# (>= 0.5) once BuildableIx ships in a release.
+[target.'cfg(not(target_os = "solana"))'.dependencies]
+anchor-litesvm = { path = "/Users/amal/oss/upstream/anchor-litesvm/crates/anchor-litesvm" }
+
 [dev-dependencies]
-anchor-litesvm = "0.4"
 solana-signer = "3.0.0"
 solana-keypair = "3.1.2"
 solana-pubkey = "4.1.0"
