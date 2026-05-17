@@ -33,5 +33,4 @@ impl<'info> Initialize<'info> {
         self.vault_state.state_bump = bumps.vault_state;
         Ok(())
     }
-
 }
