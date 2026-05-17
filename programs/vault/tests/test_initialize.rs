@@ -1,10 +1,19 @@
 use {
-    anchor_litesvm::{AnchorContext, AnchorLiteSVM, AssertionHelpers},
+    anchor_lang::prelude::msg,
+    anchor_litesvm::{AnchorContext, AnchorLiteSVM, AssertionHelpers, TransactionResult},
     solana_keypair::Keypair,
     solana_pubkey::Pubkey,
     solana_signer::Signer,
     vault::{instruction as vix, state::VaultState, test_helpers::VaultAccs},
 };
+
+// test helper
+pub fn pretty_log(tx: &TransactionResult, test_name: &str) {
+    msg!("\n\n### {}\n", test_name);
+    msg!("\n```console");
+    tx.print_logs_structured();
+    msg!("\n```\n");
+}
 
 fn setup() -> (AnchorContext, Keypair) {
     let ctx = AnchorLiteSVM::build_with_program(
@@ -34,9 +43,9 @@ fn test_initialize_deposit_withdraw_close() {
 
     // Initialize
     let ix = ctx.program().build_ix(accs, vix::Initialize {});
-    ctx.execute_instruction(ix, &[&payer])
-        .unwrap()
-        .assert_success();
+    let result = ctx.execute_instruction(ix, &[&payer]).unwrap();
+    pretty_log(&result, "Vault Initialize");
+    result.assert_success();
 
     let state: VaultState = ctx.get_account(&vault_state_pda).unwrap();
     assert_eq!(state.vault_bump, vault_bump);
@@ -44,31 +53,37 @@ fn test_initialize_deposit_withdraw_close() {
 
     // Deposit 1 SOL
     let deposit_amount: u64 = 1_000_000_000;
-    let ix = ctx
-        .program()
-        .build_ix(accs, vix::Deposit { amount: deposit_amount });
-    ctx.execute_instruction(ix, &[&payer])
-        .unwrap()
-        .assert_success();
+    let ix = ctx.program().build_ix(
+        accs,
+        vix::Deposit {
+            amount: deposit_amount,
+        },
+    );
+    let result = ctx.execute_instruction(ix, &[&payer]).unwrap();
+    pretty_log(&result, "Vault Deposit");
+    result.assert_success();
     ctx.svm.assert_sol_balance(&vault_pda, deposit_amount);
 
     // Withdraw half
     let withdraw_amount: u64 = 500_000_000;
-    let ix = ctx
-        .program()
-        .build_ix(accs, vix::Withdraw { amount: withdraw_amount });
-    ctx.execute_instruction(ix, &[&payer])
-        .unwrap()
-        .assert_success();
+    let ix = ctx.program().build_ix(
+        accs,
+        vix::Withdraw {
+            amount: withdraw_amount,
+        },
+    );
+    let result = ctx.execute_instruction(ix, &[&payer]).unwrap();
+    pretty_log(&result, "Vault Withdraw");
+    result.assert_success();
     ctx.svm
         .assert_sol_balance(&vault_pda, deposit_amount - withdraw_amount);
 
     // Close
     let user_balance_before_close = ctx.svm.get_balance(&user).unwrap();
     let ix = ctx.program().build_ix(accs, vix::Close {});
-    ctx.execute_instruction(ix, &[&payer])
-        .unwrap()
-        .assert_success();
+    let result = ctx.execute_instruction(ix, &[&payer]).unwrap();
+    pretty_log(&result, "Vault Close");
+    result.assert_success();
 
     ctx.svm.assert_account_closed(&vault_pda);
     ctx.svm.assert_account_closed(&vault_state_pda);
