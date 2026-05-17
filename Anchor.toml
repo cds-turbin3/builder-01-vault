@@ -6,17 +6,12 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-vault = "BGDwZwiCdyRySqdwCnRhAUe1yzZ8jc2Rccde8wYZVQqN"
+vault = "Bgs4A9r5k4VXFuG7cC1iXDQdEB4v5tjbBbP1wwh7Nyxd"
 
 [provider]
 cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
-# Run tests with:
-#   anchor test --skip-local-validator --skip-deploy
-# This invokes `cargo build-sbf` (producing target/deploy/vault.so for LiteSVM
-# to load via include_bytes!), then executes the `test` script below. The skip
-# flags suppress the validator/deploy steps since LiteSVM runs in-process.
 [scripts]
 test = "cargo test"
 
